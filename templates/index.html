@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Info-08 Gen</title>
+    
+    <style>
+        /* --- Dark/Light Mode Variables --- */
+        :root {
+            --primary-color: #007bff;
+            --admin-accent: #f39c12;
+            --background-color: #f8f9fa;
+            --sidebar-bg: #ffffff;
+            --chat-bg: #ffffff;
+            --text-color: #212529;
+            --muted-text-color: #6c757d;
+            --user-bubble: #e7f3ff;
+            --assistant-bubble: #f1f0f0; 
+            --border-color: #dee2e6;
+            --input-bg: #ffffff;
+            --shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        html.dark-mode {
+            --primary-color: #ff4b4b;
+            --admin-accent: #ffcc00;
+            --background-color: #0e1117;
+            --sidebar-bg: #1f232e;
+            --chat-bg: #1f232e;
+            --text-color: #ffffff;
+            --muted-text-color: #b0b0b0;
+            --user-bubble: #31333e;
+            --assistant-bubble: #262730; 
+            --border-color: #31333e;
+            --input-bg: #262730;
+            --shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; display: flex; height: 100vh; background-color: var(--background-color); color: var(--text-color); overflow: hidden; }
+
+        /* --- Sidebar --- */
+        .sidebar { 
+            width: 280px; 
+            background-color: var(--sidebar-bg); 
+            border-right: 1px solid var(--border-color); 
+            display: flex; 
+            flex-direction: column; 
+            flex-shrink: 0;
+            box-sizing: border-box;
+        }
+        
+        .sidebar-header { 
+            padding: 20px; 
+            border-bottom: 1px solid var(--border-color); 
+            display: flex; 
+            flex-direction: column; 
+            gap: 12px;
+        }
+        
+        .btn { 
+            display: block;
+            width: 100%; 
+            padding: 12px; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            transition: 0.2s; 
+            text-decoration: none; 
+            text-align: center; 
+            font-size: 0.9rem; 
+            box-sizing: border-box;
+        }
+
+        .btn-primary { background: var(--primary-color); color: white; }
+        .btn-primary:hover { opacity: 0.9; }
+        
+        .btn-admin { 
+            background: transparent; 
+            border: 2px solid var(--admin-accent) !important; 
+            color: var(--admin-accent); 
+        }
+        .btn-admin:hover { background: var(--admin-accent); color: #fff; }
+
+        .history-list { flex-grow: 1; overflow-y: auto; padding: 10px; }
+        .history-item { padding: 12px; margin-bottom: 5px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: 0.2s; border: 1px solid transparent; }
+        .history-item:hover { background: var(--user-bubble); border-color: var(--border-color); }
+        .history-item.active { background: var(--user-bubble); border-left: 4px solid var(--primary-color); }
+
+        /* --- Main Content --- */
+        .main-container { flex-grow: 1; display: flex; flex-direction: column; position: relative; }
+        .header { padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); background: var(--chat-bg); }
+        
+        .chat-area { flex-grow: 1; padding: 25px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
+        .chat-row { display: flex; gap: 15px; max-width: 85%; margin-bottom: 10px; }
+        .chat-row.user { align-self: flex-end; flex-direction: row-reverse; }
+        .chat-row.assistant { align-self: flex-start; }
+
+        .chat-icon { width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; flex-shrink: 0; }
+        .user .chat-icon { background: #6c757d; }
+        .assistant .chat-icon { background: var(--primary-color); }
+
+        .message-content { padding: 12px 18px; border-radius: 15px; box-shadow: var(--shadow); line-height: 1.5; font-size: 0.95rem; word-wrap: break-word; }
+        .user .message-content { background: var(--user-bubble); border-bottom-right-radius: 2px; }
+        .assistant .message-content { background: var(--assistant-bubble); border-bottom-left-radius: 2px; }
+
+        /* --- Input Area --- */
+        .input-area { padding: 20px; background: var(--chat-bg); border-top: 1px solid var(--border-color); }
+        .input-wrapper { max-width: 800px; margin: 0 auto; position: relative; display: flex; gap: 10px; }
+        input[type="text"] { flex-grow: 1; padding: 14px 20px; border-radius: 25px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-color); outline: none; }
+        .send-btn { background: var(--primary-color); color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
+        .send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Markdown Table Styling */
+        .message-content table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 0.85rem; }
+        .message-content th, .message-content td { border: 1px solid var(--border-color); padding: 8px; text-align: left; }
+        .message-content th { background: rgba(0,0,0,0.05); }
+
+        #thinking-bubble { display: none; font-style: italic; color: var(--muted-text-color); font-size: 0.85rem; padding: 10px 0 10px 70px; }
+    </style>
+</head>
+<body>
+
+    {% if current_user.is_authenticated %}
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <button class="btn btn-primary" id="new-chat-btn">+ New Conversation</button>
+            
+            {% if current_user.is_admin %}
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-admin">⚙️ Admin Dashboard</a>
+            {% endif %}
+        </div>
+        <div class="history-list" id="history-list">
+            <div id="history-header-label" style="padding: 10px; font-size: 0.75rem; color: var(--muted-text-color); text-transform: uppercase; letter-spacing: 1px;">Recent Chats</div>
+            {% for conv in conversations %}
+            <div class="history-item" data-id="{{ conv.id }}">{{ conv.title }}</div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="main-container">
+        <div class="header">
+            <div><strong>🚀 Info-08 Gen</strong></div>
+            <div class="nav" style="display: flex; align-items: center; gap: 15px;">
+                <button id="theme-toggle" style="background:none; border:none; cursor:pointer; font-size: 1.2rem;">🌙</button>
+                
+                {% if current_user.is_authenticated %}
+                    <span style="font-size: 0.9rem; border-left: 1px solid var(--border-color); padding-left: 15px;">
+                        Hi, <strong>{{ current_user.username }}</strong>
+                    </span>
+                    <a href="{{ url_for('logout') }}" style="color: var(--primary-color); text-decoration:none; font-size: 0.9rem; font-weight: bold;">Logout</a>
+                {% else %}
+                    <a href="{{ url_for('login') }}" style="color: var(--primary-color); text-decoration:none; font-weight: bold;">Login</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="chat-area" id="chat-area">
+            {% if not current_user.is_authenticated %}
+                <div style="text-align:center; margin-top:100px;">
+                    <h2 style="color: var(--primary-color);">Welcome to Info-08 Gen</h2>
+                    <p style="color:var(--muted-text-color);">Please login to access technical data.</p>
+                </div>
+            {% else %}
+                <p id="welcome-msg" style="text-align:center; margin-top:100px; color:var(--muted-text-color);">
+                    Ready. Type an <b>Access Code</b> (e.g., 6010) or ask a question.
+                </p>
+            {% endif %}
+        </div>
+
+        <div id="thinking-bubble"> Info-08 Gen is analyzing...</div>
+
+        <div class="input-area">
+            <form id="chat-form" class="input-wrapper">
+                <input type="text" id="user-input" placeholder="Type Access Code or question..." autocomplete="off" required {% if not current_user.is_authenticated %}disabled{% endif %}>
+                <input type="hidden" name="conv_id" id="active-conv-id">
+                <button type="submit" class="send-btn" id="send-btn" {% if not current_user.is_authenticated %}disabled{% endif %}>➤</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        const chatForm = document.getElementById('chat-form');
+        const userInput = document.getElementById('user-input');
+        const chatArea = document.getElementById('chat-area');
+        const thinkingBubble = document.getElementById('thinking-bubble');
+        const activeConvId = document.getElementById('active-conv-id');
+        const historyList = document.getElementById('history-list');
+
+        // Theme Toggle
+        document.getElementById('theme-toggle').addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark-mode');
+            const isDark = document.documentElement.classList.contains('dark-mode');
+            document.getElementById('theme-toggle').innerText = isDark ? '☀️' : '🌙';
+        });
+
+        function appendMessage(role, content) {
+            const row = document.createElement('div');
+            row.className = `chat-row ${role}`;
+            const textContent = content || "";
+            const contentHTML = role === 'assistant' ? marked.parse(textContent) : textContent;
+            row.innerHTML = `<div class="chat-icon">${role === 'user' ? '👤' : '🤖'}</div><div class="message-content">${contentHTML}</div>`;
+            chatArea.appendChild(row);
+            chatArea.scrollTop = chatArea.scrollHeight;
+            return row.querySelector('.message-content');
+        }
+
+        // Reusable Function to Load History by ID
+        async function loadHistoryById(id, element) {
+            document.querySelectorAll('.history-item').forEach(i => i.classList.remove('active'));
+            element.classList.add('active');
+            
+            activeConvId.value = id;
+            chatArea.innerHTML = '<div style="text-align:center; margin-top:50px;">Loading chat history...</div>';
+            
+            try {
+                const resp = await fetch(`/get_chat_history/${id}`);
+                const data = await resp.json();
+                chatArea.innerHTML = '';
+                if(data.success) {
+                    data.messages.forEach(m => appendMessage(m.role, m.content));
+                }
+            } catch (err) {
+                chatArea.innerHTML = '⚠️ Failed to load history.';
+            }
+        }
+
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const prompt = userInput.value.trim();
+            if(!prompt) return;
+
+            const welcomeMsg = document.getElementById('welcome-msg');
+            if (welcomeMsg) welcomeMsg.remove();
+            
+            appendMessage('user', prompt);
+            userInput.value = '';
+            
+            const assistantContentDiv = appendMessage('assistant', "...");
+            thinkingBubble.style.display = 'block';
+            document.getElementById('send-btn').disabled = true;
+
+            const formData = new FormData();
+            formData.append('prompt', prompt);
+            formData.append('conv_id', activeConvId.value); 
+
+            try {
+                const response = await fetch('{{ url_for("chat_submit") }}', { 
+                    method: 'POST', 
+                    body: formData 
+                });
+                
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let fullText = "";
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    thinkingBubble.style.display = 'none';
+                    const lines = decoder.decode(value).split('\n');
+                    
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.substring(6));
+                                
+                                // DYNAMIC SIDEBAR UPDATE
+                                if (data.conv_id) {
+                                    activeConvId.value = data.conv_id;
+                                    
+                                    // Add to sidebar if it's not already there
+                                    if (!document.querySelector(`.history-item[data-id="${data.conv_id}"]`)) {
+                                        const newItem = document.createElement('div');
+                                        newItem.className = 'history-item active';
+                                        newItem.dataset.id = data.conv_id;
+                                        newItem.innerText = prompt.substring(0, 25) + (prompt.length > 25 ? "..." : "");
+                                        newItem.onclick = () => loadHistoryById(data.conv_id, newItem);
+                                        
+                                        // Insert right after the header label
+                                        const headerLabel = document.getElementById('history-header-label');
+                                        headerLabel.after(newItem);
+                                    }
+                                }
+                                
+                                if (data.chunk) {
+                                    fullText += data.chunk;
+                                    assistantContentDiv.innerHTML = marked.parse(fullText);
+                                    chatArea.scrollTop = chatArea.scrollHeight;
+                                }
+                            } catch (e) { console.error("Stream parse error", e); }
+                        }
+                    }
+                }
+            } catch (error) {
+                assistantContentDiv.innerHTML = "⚠️ Error connecting to server.";
+            } finally {
+                thinkingBubble.style.display = 'none';
+                document.getElementById('send-btn').disabled = false;
+            }
+        });
+
+        // Initialize existing history items
+        document.querySelectorAll('.history-item').forEach(item => {
+            item.onclick = () => loadHistoryById(item.dataset.id, item);
+        });
+
+        // New Chat Logic
+        document.getElementById('new-chat-btn')?.addEventListener('click', () => {
+            activeConvId.value = ''; 
+            document.querySelectorAll('.history-item').forEach(i => i.classList.remove('active'));
+            chatArea.innerHTML = '<p id="welcome-msg" style="text-align:center; margin-top:100px; color:var(--muted-text-color);">New Conversation Started. Type a code to begin.</p>';
+            userInput.focus();
+        });
+    </script>
+</body>
+</html>
